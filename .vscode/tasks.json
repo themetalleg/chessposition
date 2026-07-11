@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Chess Position App",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "-B",
+        "${workspaceFolder}/app.py"
+      ],
+      "options": {
+        "env": {
+          "PYTHONDONTWRITEBYTECODE": "1"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
