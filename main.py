@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
-    QSplitter,
     QVBoxLayout,
     QWidget,
 )
@@ -165,13 +164,14 @@ class PhotoCornerWidget(QLabel):
         painter.drawPixmap(int(left), int(top), scaled)
         sx = scaled.width() / self._source_pixmap.width()
         sy = scaled.height() / self._source_pixmap.height()
-        colors = [QColor("#50fa7b"), QColor("#8be9fd"), QColor("#ffb86c"), QColor("#ff79c6")]
-        for i, source_point in enumerate(self._corners):
+        marker_color = QColor("#ff0000")
+        marker_pen = QPen(marker_color)
+        marker_pen.setWidth(2)
+        painter.setPen(marker_pen)
+        painter.setBrush(marker_color)
+        for source_point in self._corners:
             p = QPointF(left + source_point.x() * sx, top + source_point.y() * sy)
-            painter.setPen(colors[i % len(colors)])
-            painter.setBrush(colors[i % len(colors)])
             painter.drawEllipse(p, 5, 5)
-            painter.drawText(p + QPointF(8, -8), str(i + 1))
         painter.end()
         self._display_pixmap = scaled
         self.setPixmap(canvas)
@@ -410,19 +410,23 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(color_group)
         root.addLayout(toolbar)
 
-        splitter = QSplitter()
-        left_panel = QWidget()
-        left_layout = QVBoxLayout(left_panel)
-        left_layout.addWidget(QLabel("Photo corner marking"))
-        left_layout.addWidget(self.photo_widget, stretch=1)
-        left_layout.addWidget(QLabel("Piece palette (drag to board)"))
-        left_layout.addWidget(self.palette)
-        splitter.addWidget(left_panel)
-        splitter.addWidget(self.board)
-        splitter.setStretchFactor(0, 2)
-        splitter.setStretchFactor(1, 3)
-        root.addWidget(splitter, stretch=1)
+        top_row = QHBoxLayout()
+        photo_panel = QWidget()
+        photo_layout = QVBoxLayout(photo_panel)
+        photo_layout.addWidget(QLabel("Photo corner marking"))
+        photo_layout.addWidget(self.photo_widget, stretch=1)
+        board_panel = QWidget()
+        board_layout = QVBoxLayout(board_panel)
+        board_layout.addWidget(QLabel("Board"))
+        board_layout.addWidget(self.board, stretch=1)
+        top_row.addWidget(photo_panel, stretch=1)
+        top_row.addWidget(board_panel, stretch=1)
+        root.addLayout(top_row, stretch=1)
 
+        palette_label = QLabel("Piece palette (drag to board)")
+        palette_label.setAlignment(Qt.AlignCenter)
+        root.addWidget(palette_label)
+        root.addWidget(self.palette, alignment=Qt.AlignCenter)
         root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
 
