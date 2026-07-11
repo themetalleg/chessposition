@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -427,11 +428,13 @@ class MainWindow(QMainWindow):
 
         top_row = QHBoxLayout()
         photo_panel = QWidget()
+        photo_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         photo_layout = QVBoxLayout(photo_panel)
         photo_layout.setContentsMargins(0, 0, 0, 0)
         photo_layout.setSpacing(0)
         photo_layout.addWidget(self.photo_widget, stretch=1)
         board_panel = QWidget()
+        board_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         board_layout = QVBoxLayout(board_panel)
         board_layout.setContentsMargins(0, 0, 0, 0)
         board_layout.setSpacing(0)
