@@ -88,6 +88,7 @@ class PieceIconStore:
 
 class PhotoCornerWidget(QLabel):
     cornersChanged = Signal()
+    loadPhotoRequested = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -122,9 +123,12 @@ class PhotoCornerWidget(QLabel):
         return list(self._corners)
 
     def mousePressEvent(self, event) -> None:
-        if self._source_pixmap is None or self._display_pixmap is None:
-            return
         if event.button() != Qt.LeftButton:
+            return
+        if self._source_pixmap is None:
+            self.loadPhotoRequested.emit()
+            return
+        if self._display_pixmap is None:
             return
         if len(self._corners) == 4:
             self._corners.clear()
@@ -413,7 +417,6 @@ class MainWindow(QMainWindow):
         top_row = QHBoxLayout()
         photo_panel = QWidget()
         photo_layout = QVBoxLayout(photo_panel)
-        photo_layout.addWidget(QLabel("Photo corner marking"))
         photo_layout.addWidget(self.photo_widget, stretch=1)
         board_panel = QWidget()
         board_layout = QVBoxLayout(board_panel)
@@ -423,9 +426,6 @@ class MainWindow(QMainWindow):
         top_row.addWidget(board_panel, stretch=1)
         root.addLayout(top_row, stretch=1)
 
-        palette_label = QLabel("Piece palette (drag to board)")
-        palette_label.setAlignment(Qt.AlignCenter)
-        root.addWidget(palette_label)
         root.addWidget(self.palette, alignment=Qt.AlignCenter)
         root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
@@ -433,6 +433,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self) -> None:
         self.load_btn.clicked.connect(self._load_photo)
         self.reset_corners_btn.clicked.connect(self.photo_widget.clear_corners)
+        self.photo_widget.loadPhotoRequested.connect(self._load_photo)
         self.photo_widget.cornersChanged.connect(self._warp_photo)
         self.clear_board_btn.clicked.connect(self.board.clear_board)
         self.board.boardChanged.connect(self._update_fen)
