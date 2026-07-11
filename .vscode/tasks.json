@@ -7,7 +7,7 @@
       "command": "python",
       "args": [
         "-B",
-        "${workspaceFolder}/app.py"
+        "${workspaceFolder}/main.py"
       ],
       "options": {
         "env": {

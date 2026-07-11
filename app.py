@@ -3,9 +3,10 @@ from __future__ import annotations
 import sys
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 
 from PySide6.QtCore import QPointF, Qt, Signal
-from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPalette, QPixmap, QTransform
+from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPixmap, QTransform
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication,
@@ -457,20 +458,9 @@ class MainWindow(QMainWindow):
 
 def apply_dark_theme(app: QApplication) -> None:
     app.setStyle("Fusion")
-    palette = QPalette()
-    palette.setColor(QPalette.Window, QColor(30, 31, 41))
-    palette.setColor(QPalette.WindowText, QColor(244, 244, 244))
-    palette.setColor(QPalette.Base, QColor(22, 22, 30))
-    palette.setColor(QPalette.AlternateBase, QColor(45, 48, 61))
-    palette.setColor(QPalette.ToolTipBase, QColor(55, 58, 75))
-    palette.setColor(QPalette.ToolTipText, QColor(244, 244, 244))
-    palette.setColor(QPalette.Text, QColor(244, 244, 244))
-    palette.setColor(QPalette.Button, QColor(45, 48, 61))
-    palette.setColor(QPalette.ButtonText, QColor(244, 244, 244))
-    palette.setColor(QPalette.BrightText, QColor(255, 121, 198))
-    palette.setColor(QPalette.Highlight, QColor(98, 114, 164))
-    palette.setColor(QPalette.HighlightedText, QColor(244, 244, 244))
-    app.setPalette(palette)
+    style_path = Path(__file__).resolve().parent / "styles" / "dark.qss"
+    if style_path.exists():
+        app.setStyleSheet(style_path.read_text(encoding="utf-8"))
 
 
 def main() -> int:

@@ -18,7 +18,7 @@ Desktop app to build a chess position from a photo and export FEN notation.
 
 ```bash
 python -m pip install -r requirements.txt
-python /home/runner/work/chessposition/chessposition/app.py
+python /home/runner/work/chessposition/chessposition/main.py
 ```
 
 ## Test
