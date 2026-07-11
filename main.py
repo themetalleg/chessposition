@@ -22,7 +22,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QSplitter,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -357,6 +356,21 @@ class BoardWidget(QWidget):
         painter.end()
 
 
+class CopyableFenLabel(QLabel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setAlignment(Qt.AlignCenter)
+        self.setCursor(Qt.PointingHandCursor)
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.LeftButton:
+            fen = self.text().strip()
+            if fen:
+                QApplication.clipboard().setText(fen)
+                logger.info("FEN copied to clipboard.")
+        super().mousePressEvent(event)
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -366,8 +380,7 @@ class MainWindow(QMainWindow):
         self.photo_widget = PhotoCornerWidget()
         self.palette = PiecePalette(self._icons)
         self.board = BoardWidget(self._icons)
-        self.fen_box = QTextEdit()
-        self.fen_box.setReadOnly(True)
+        self.fen_label = CopyableFenLabel()
         self._build_ui()
         self._connect_signals()
         self._update_fen()
@@ -412,8 +425,7 @@ class MainWindow(QMainWindow):
         splitter.setStretchFactor(1, 3)
         root.addWidget(splitter, stretch=1)
 
-        root.addWidget(QLabel("FEN"))
-        root.addWidget(self.fen_box)
+        root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
 
     def _connect_signals(self) -> None:
@@ -488,7 +500,7 @@ class MainWindow(QMainWindow):
             return None
 
     def _update_fen(self) -> None:
-        self.fen_box.setText(board_to_fen(self.board.board_state()))
+        self.fen_label.setText(board_to_fen(self.board.board_state()))
 
 
 def main() -> int:
