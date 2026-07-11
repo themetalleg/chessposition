@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, Qt, QMimeData, Signal, QByteArray
-from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPen, QPixmap, QTransform
+from PySide6.QtGui import QAction, QColor, QDrag, QIcon, QImage, QPainter, QPen, QPixmap, QTransform
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication,
@@ -416,6 +416,7 @@ class MainWindow(QMainWindow):
         self.color_toggle_btn = QPushButton()
         self.board = BoardWidget(self._icons)
         self.fen_label = CopyableFenLabel()
+        self.setWindowIcon(QIcon(self._icons.pixmap("K", 64)))
         self._build_ui()
         self._connect_signals()
         self._update_fen()
@@ -427,9 +428,13 @@ class MainWindow(QMainWindow):
         top_row = QHBoxLayout()
         photo_panel = QWidget()
         photo_layout = QVBoxLayout(photo_panel)
+        photo_layout.setContentsMargins(0, 0, 0, 0)
+        photo_layout.setSpacing(0)
         photo_layout.addWidget(self.photo_widget, stretch=1)
         board_panel = QWidget()
         board_layout = QVBoxLayout(board_panel)
+        board_layout.setContentsMargins(0, 0, 0, 0)
+        board_layout.setSpacing(0)
         board_layout.addWidget(self.board, stretch=1)
         top_row.addWidget(photo_panel, stretch=1)
         top_row.addWidget(board_panel, stretch=1)
@@ -538,6 +543,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     StyleManager().apply_theme(app)
     window = MainWindow()
+    app.setWindowIcon(window.windowIcon())
     window.showMaximized()
     return app.exec()
 
