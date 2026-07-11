@@ -432,20 +432,20 @@ class MainWindow(QMainWindow):
         top_row.setSpacing(0)
         self.photo_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.board.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        photo_panel = QWidget()
-        photo_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        photo_layout = QVBoxLayout(photo_panel)
+        self.photo_panel = QWidget()
+        self.photo_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        photo_layout = QVBoxLayout(self.photo_panel)
         photo_layout.setContentsMargins(0, 0, 0, 0)
         photo_layout.setSpacing(0)
         photo_layout.addWidget(self.photo_widget, stretch=1)
-        board_panel = QWidget()
-        board_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        board_layout = QVBoxLayout(board_panel)
+        self.board_panel = QWidget()
+        self.board_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        board_layout = QVBoxLayout(self.board_panel)
         board_layout.setContentsMargins(0, 0, 0, 0)
         board_layout.setSpacing(0)
         board_layout.addWidget(self.board, stretch=1)
-        top_row.addWidget(photo_panel, stretch=1)
-        top_row.addWidget(board_panel, stretch=1)
+        top_row.addWidget(self.photo_panel, stretch=1)
+        top_row.addWidget(self.board_panel, stretch=1)
         root.addLayout(top_row, stretch=1)
 
         self.color_toggle_btn.setText("⚪")
@@ -460,6 +460,18 @@ class MainWindow(QMainWindow):
         root.addLayout(palette_row)
         root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
+        self._sync_top_area_heights()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._sync_top_area_heights()
+
+    def _sync_top_area_heights(self) -> None:
+        side = min(self.photo_panel.width(), self.board_panel.width())
+        if side <= 0:
+            return
+        self.photo_widget.setMaximumHeight(side)
+        self.board.setMaximumHeight(side)
         QTimer.singleShot(0, self._sync_top_area_heights)
 
     def resizeEvent(self, event) -> None:
