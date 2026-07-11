@@ -5,18 +5,18 @@ RANKS = "87654321"
 PIECE_TYPES = [("K", "King"), ("Q", "Queen"), ("R", "Rook"), ("B", "Bishop"), ("N", "Knight"), ("P", "Pawn")]
 PIECE_CODES = {code for code, _ in PIECE_TYPES}
 PIECE_SVG_FILES = {
-    "K": "File_Chess_klt45.svg",
-    "Q": "File_Chess_qlt45.svg",
-    "R": "File_Chess_rlt45.svg",
-    "B": "File_Chess_blt45.svg",
-    "N": "File_Chess_nlt45.svg",
-    "P": "File_Chess_plt45.svg",
-    "k": "File_Chess_kdt45.svg",
-    "q": "File_Chess_qdt45.svg",
-    "r": "File_Chess_rdt45.svg",
-    "b": "File_Chess_bdt45.svg",
-    "n": "File_Chess_ndt45.svg",
-    "p": "File_Chess_pdt45.svg",
+    "K": "Chess_klt45.svg",
+    "Q": "Chess_qlt45.svg",
+    "R": "Chess_rlt45.svg",
+    "B": "Chess_blt45.svg",
+    "N": "Chess_nlt45.svg",
+    "P": "Chess_plt45.svg",
+    "k": "Chess_kdt45.svg",
+    "q": "Chess_qdt45.svg",
+    "r": "Chess_rdt45.svg",
+    "b": "Chess_bdt45.svg",
+    "n": "Chess_ndt45.svg",
+    "p": "Chess_pdt45.svg",
 }
 
 
