@@ -428,6 +428,10 @@ class MainWindow(QMainWindow):
         root = QVBoxLayout(outer)
 
         top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
+        top_row.setSpacing(0)
+        self.photo_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.board.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         photo_panel = QWidget()
         photo_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         photo_layout = QVBoxLayout(photo_panel)
