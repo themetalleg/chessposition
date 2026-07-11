@@ -28,25 +28,9 @@ from PySide6.QtWidgets import (
 )
 
 from core.logging_manager import LoggingManager
+from core.style_manager import StyleManager
 from fen_utils import board_to_fen
-
-FILES = "abcdefgh"
-RANKS = "87654321"
-PIECE_TYPES = [("K", "King"), ("Q", "Queen"), ("R", "Rook"), ("B", "Bishop"), ("N", "Knight"), ("P", "Pawn")]
-PIECE_SVG_FILES = {
-    "K": "File_Chess_klt45.svg",
-    "Q": "File_Chess_qlt45.svg",
-    "R": "File_Chess_rlt45.svg",
-    "B": "File_Chess_blt45.svg",
-    "N": "File_Chess_nlt45.svg",
-    "P": "File_Chess_plt45.svg",
-    "k": "File_Chess_kdt45.svg",
-    "q": "File_Chess_qdt45.svg",
-    "r": "File_Chess_rdt45.svg",
-    "b": "File_Chess_bdt45.svg",
-    "n": "File_Chess_ndt45.svg",
-    "p": "File_Chess_pdt45.svg",
-}
+from utils.chess_utils import FILES, PIECE_CODES, PIECE_SVG_FILES, PIECE_TYPES, RANKS, square_name
 logger = LoggingManager.get_logger(__name__)
 
 
@@ -57,7 +41,7 @@ class SquareCoord:
 
     @property
     def name(self) -> str:
-        return f"{FILES[self.file_index]}{RANKS[self.rank_index]}"
+        return square_name(self.file_index, self.rank_index)
 
 
 class PieceIconStore:
@@ -281,7 +265,7 @@ class BoardWidget(QWidget):
     def dropEvent(self, event) -> None:
         piece_type = event.mimeData().text().strip().upper()
         square = self._square_at(event.position())
-        if square is None or piece_type not in {k for k, _ in PIECE_TYPES}:
+        if square is None or piece_type not in PIECE_CODES:
             return
         self._board[square.name] = piece_type if self.active_color == "white" else piece_type.lower()
         self.boardChanged.emit()
@@ -499,17 +483,10 @@ class MainWindow(QMainWindow):
         self.fen_box.setText(board_to_fen(self.board.board_state()))
 
 
-def apply_dark_theme(app: QApplication) -> None:
-    app.setStyle("Fusion")
-    style_path = Path(__file__).resolve().parent / "styles" / "dark.qss"
-    if style_path.exists():
-        app.setStyleSheet(style_path.read_text(encoding="utf-8"))
-
-
 def main() -> int:
     LoggingManager.configure()
     app = QApplication(sys.argv)
-    apply_dark_theme(app)
+    StyleManager().apply_theme(app)
     window = MainWindow()
     window.show()
     return app.exec()
