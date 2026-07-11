@@ -21,7 +21,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
-    QSplitter,
     QVBoxLayout,
     QWidget,
 )
@@ -89,6 +88,7 @@ class PieceIconStore:
 
 class PhotoCornerWidget(QLabel):
     cornersChanged = Signal()
+    loadPhotoRequested = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -123,9 +123,12 @@ class PhotoCornerWidget(QLabel):
         return list(self._corners)
 
     def mousePressEvent(self, event) -> None:
-        if self._source_pixmap is None or self._display_pixmap is None:
-            return
         if event.button() != Qt.LeftButton:
+            return
+        if self._source_pixmap is None:
+            self.loadPhotoRequested.emit()
+            return
+        if self._display_pixmap is None:
             return
         if len(self._corners) == 4:
             self._corners.clear()
@@ -165,13 +168,14 @@ class PhotoCornerWidget(QLabel):
         painter.drawPixmap(int(left), int(top), scaled)
         sx = scaled.width() / self._source_pixmap.width()
         sy = scaled.height() / self._source_pixmap.height()
-        colors = [QColor("#50fa7b"), QColor("#8be9fd"), QColor("#ffb86c"), QColor("#ff79c6")]
-        for i, source_point in enumerate(self._corners):
+        marker_color = QColor("#ff0000")
+        marker_pen = QPen(marker_color)
+        marker_pen.setWidth(2)
+        painter.setPen(marker_pen)
+        painter.setBrush(marker_color)
+        for source_point in self._corners:
             p = QPointF(left + source_point.x() * sx, top + source_point.y() * sy)
-            painter.setPen(colors[i % len(colors)])
-            painter.setBrush(colors[i % len(colors)])
             painter.drawEllipse(p, 5, 5)
-            painter.drawText(p + QPointF(8, -8), str(i + 1))
         painter.end()
         self._display_pixmap = scaled
         self.setPixmap(canvas)
@@ -410,25 +414,26 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(color_group)
         root.addLayout(toolbar)
 
-        splitter = QSplitter()
-        left_panel = QWidget()
-        left_layout = QVBoxLayout(left_panel)
-        left_layout.addWidget(QLabel("Photo corner marking"))
-        left_layout.addWidget(self.photo_widget, stretch=1)
-        left_layout.addWidget(QLabel("Piece palette (drag to board)"))
-        left_layout.addWidget(self.palette)
-        splitter.addWidget(left_panel)
-        splitter.addWidget(self.board)
-        splitter.setStretchFactor(0, 2)
-        splitter.setStretchFactor(1, 3)
-        root.addWidget(splitter, stretch=1)
+        top_row = QHBoxLayout()
+        photo_panel = QWidget()
+        photo_layout = QVBoxLayout(photo_panel)
+        photo_layout.addWidget(self.photo_widget, stretch=1)
+        board_panel = QWidget()
+        board_layout = QVBoxLayout(board_panel)
+        board_layout.addWidget(QLabel("Board"))
+        board_layout.addWidget(self.board, stretch=1)
+        top_row.addWidget(photo_panel, stretch=1)
+        top_row.addWidget(board_panel, stretch=1)
+        root.addLayout(top_row, stretch=1)
 
+        root.addWidget(self.palette, alignment=Qt.AlignCenter)
         root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
 
     def _connect_signals(self) -> None:
         self.load_btn.clicked.connect(self._load_photo)
         self.reset_corners_btn.clicked.connect(self.photo_widget.clear_corners)
+        self.photo_widget.loadPhotoRequested.connect(self._load_photo)
         self.photo_widget.cornersChanged.connect(self._warp_photo)
         self.clear_board_btn.clicked.connect(self.board.clear_board)
         self.board.boardChanged.connect(self._update_fen)
@@ -515,7 +520,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     StyleManager().apply_theme(app)
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     return app.exec()
 
 
