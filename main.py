@@ -19,7 +19,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSizePolicy,
-    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -398,15 +397,33 @@ class CopyableFenLabel(QLabel):
         super().__init__()
         self.setAlignment(Qt.AlignCenter)
         self.setCursor(Qt.PointingHandCursor)
+        self._fen_text = ""
+        self._showing_copied = False
+
+    def set_fen(self, fen: str) -> None:
+        self._fen_text = fen
+        self._refresh_text()
+
+    def _refresh_text(self) -> None:
+        if self._showing_copied:
+            self.setText(f"{self._fen_text}  Copied")
+        else:
+            self.setText(self._fen_text)
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
-            fen = self.text().strip()
+            fen = self._fen_text.strip()
             if fen:
                 QApplication.clipboard().setText(fen)
-                QToolTip.showText(event.globalPosition().toPoint(), "Copied", self, self.rect(), 5000)
+                self._showing_copied = True
+                self._refresh_text()
+                QTimer.singleShot(5000, self._clear_copied)
                 logger.info("FEN copied to clipboard.")
         super().mousePressEvent(event)
+
+    def _clear_copied(self) -> None:
+        self._showing_copied = False
+        self._refresh_text()
 
 
 class MainWindow(QMainWindow):
@@ -420,6 +437,7 @@ class MainWindow(QMainWindow):
         self.color_toggle_btn = QPushButton()
         self.board = BoardWidget(self._icons)
         self.fen_label = CopyableFenLabel()
+        self.lichess_label = QLabel()
         self.setWindowIcon(QIcon(self._icons.pixmap("K", 64)))
         self._build_ui()
         self._connect_signals()
@@ -461,6 +479,9 @@ class MainWindow(QMainWindow):
         palette_row.addStretch()
         root.addLayout(palette_row)
         root.addWidget(self.fen_label)
+        self.lichess_label.setAlignment(Qt.AlignCenter)
+        self.lichess_label.setOpenExternalLinks(True)
+        root.addWidget(self.lichess_label)
         self.setCentralWidget(outer)
         self._sync_top_area_heights()
 
@@ -569,7 +590,10 @@ class MainWindow(QMainWindow):
             return None
 
     def _update_fen(self) -> None:
-        self.fen_label.setText(board_to_fen(self.board.board_state()))
+        fen = board_to_fen(self.board.board_state())
+        self.fen_label.set_fen(fen)
+        url = f"https://lichess.org/analysis/standard/{fen}"
+        self.lichess_label.setText(f'<a href="{url}">{url}</a>')
 
 
 def main() -> int:
