@@ -515,7 +515,7 @@ def main() -> int:
     app = QApplication(sys.argv)
     StyleManager().apply_theme(app)
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     return app.exec()
 
 
