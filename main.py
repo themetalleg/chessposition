@@ -214,7 +214,6 @@ class PiecePalette(QWidget):
 
     def __init__(self, icon_store: PieceIconStore) -> None:
         super().__init__()
-        self.setMaximumWidth(170)
         self._active_color = "white"
         self._items: list[PiecePaletteItem] = []
         layout = QGridLayout(self)
@@ -224,8 +223,8 @@ class PiecePalette(QWidget):
             item = PiecePaletteItem(code, name, icon_store, self)
             self._items.append(item)
         for index, item in enumerate(self._items):
-            row = index // 3
-            col = index % 3
+            row = 0
+            col = index
             layout.addWidget(item, row, col)
 
     def set_active_color(self, color: str) -> None:
