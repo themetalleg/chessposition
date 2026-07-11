@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSizePolicy,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -403,6 +404,7 @@ class CopyableFenLabel(QLabel):
             fen = self.text().strip()
             if fen:
                 QApplication.clipboard().setText(fen)
+                QToolTip.showText(event.globalPosition().toPoint(), "Copied", self, self.rect(), 5000)
                 logger.info("FEN copied to clipboard.")
         super().mousePressEvent(event)
 
