@@ -339,7 +339,7 @@ class BoardWidget(QWidget):
     def _square_at(self, pos: QPointF) -> SquareCoord | None:
         side = min(self.width(), self.height())
         origin_x = (self.width() - side) / 2
-        origin_y = (self.height() - side) / 2
+        origin_y = 0
         if not (origin_x <= pos.x() <= origin_x + side and origin_y <= pos.y() <= origin_y + side):
             return None
         square_size = side / 8
@@ -352,7 +352,7 @@ class BoardWidget(QWidget):
     def paintEvent(self, event) -> None:
         side = min(self.width(), self.height())
         origin_x = int((self.width() - side) / 2)
-        origin_y = int((self.height() - side) / 2)
+        origin_y = 0
         square_size = side / 8
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(BOARD_BG_COLOR))
