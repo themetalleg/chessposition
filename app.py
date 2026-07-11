@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import sys
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, Qt, Signal
+from PySide6.QtCore import QPointF, Qt, QMimeData, Signal
 from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPixmap, QTransform
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -13,11 +12,10 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QFileDialog,
     QFrame,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
     QMainWindow,
     QMenu,
     QMessageBox,
@@ -34,19 +32,19 @@ from fen_utils import board_to_fen
 FILES = "abcdefgh"
 RANKS = "87654321"
 PIECE_TYPES = [("K", "King"), ("Q", "Queen"), ("R", "Rook"), ("B", "Bishop"), ("N", "Knight"), ("P", "Pawn")]
-WIKIMEDIA_SVG = {
-    "K": "https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg",
-    "Q": "https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg",
-    "R": "https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg",
-    "B": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg",
-    "N": "https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg",
-    "P": "https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg",
-    "k": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg",
-    "q": "https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg",
-    "r": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg",
-    "b": "https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg",
-    "n": "https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg",
-    "p": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg",
+PIECE_SVG_FILES = {
+    "K": "File_Chess_klt45.svg",
+    "Q": "File_Chess_qlt45.svg",
+    "R": "File_Chess_rlt45.svg",
+    "B": "File_Chess_blt45.svg",
+    "N": "File_Chess_nlt45.svg",
+    "P": "File_Chess_plt45.svg",
+    "k": "File_Chess_kdt45.svg",
+    "q": "File_Chess_qdt45.svg",
+    "r": "File_Chess_rdt45.svg",
+    "b": "File_Chess_bdt45.svg",
+    "n": "File_Chess_ndt45.svg",
+    "p": "File_Chess_pdt45.svg",
 }
 
 
@@ -64,6 +62,7 @@ class PieceIconStore:
     def __init__(self) -> None:
         self._cache: dict[tuple[str, int], QPixmap] = {}
         self._svg_data: dict[str, bytes] = {}
+        self._pieces_dir = Path(__file__).resolve().parent / "pieces"
 
     def pixmap(self, piece: str, size: int) -> QPixmap:
         key = (piece, size)
@@ -76,11 +75,11 @@ class PieceIconStore:
     def _render_svg(self, piece: str, size: int) -> QPixmap:
         data = self._svg_data.get(piece)
         if data is None:
-            url = WIKIMEDIA_SVG[piece]
+            file_name = PIECE_SVG_FILES[piece]
+            svg_path = self._pieces_dir / file_name
             try:
-                with urllib.request.urlopen(url, timeout=5) as response:
-                    data = response.read()
-                    self._svg_data[piece] = data
+                data = svg_path.read_bytes()
+                self._svg_data[piece] = data
             except Exception:
                 data = b""
         if data:
@@ -189,31 +188,57 @@ class PhotoCornerWidget(QLabel):
         self.setPixmap(canvas)
 
 
-class PiecePalette(QListWidget):
+class PiecePaletteItem(QLabel):
+    def __init__(self, code: str, name: str, icon_store: PieceIconStore, palette: "PiecePalette") -> None:
+        super().__init__()
+        self._code = code
+        self._icon_store = icon_store
+        self._palette = palette
+        self.setToolTip(name)
+        self.setAlignment(Qt.AlignCenter)
+        self.setFixedSize(66, 66)
+        self.update_icon("white")
+
+    def update_icon(self, color: str) -> None:
+        piece = self._code if color == "white" else self._code.lower()
+        self.setPixmap(self._icon_store.pixmap(piece, 56))
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() != Qt.LeftButton:
+            return
+        mime_data = QMimeData()
+        mime_data.setText(self._code)
+        drag = QDrag(self)
+        drag.setMimeData(mime_data)
+        piece = self._code if self._palette._active_color == "white" else self._code.lower()
+        drag.setPixmap(self._icon_store.pixmap(piece, 48))
+        self._palette.pieceDragStarted.emit(self._code)
+        drag.exec(Qt.CopyAction)
+
+
+class PiecePalette(QWidget):
     pieceDragStarted = Signal(str)
 
-    def __init__(self) -> None:
+    def __init__(self, icon_store: PieceIconStore) -> None:
         super().__init__()
-        self.setDragEnabled(True)
-        self.setMaximumWidth(140)
+        self.setMaximumWidth(170)
+        self._active_color = "white"
+        self._items: list[PiecePaletteItem] = []
+        layout = QGridLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(6)
         for code, name in PIECE_TYPES:
-            item = QListWidgetItem(name)
-            item.setData(Qt.UserRole, code)
-            self.addItem(item)
+            item = PiecePaletteItem(code, name, icon_store, self)
+            self._items.append(item)
+        for index, item in enumerate(self._items):
+            row = index // 3
+            col = index % 3
+            layout.addWidget(item, row, col)
 
-    def startDrag(self, actions) -> None:
-        item = self.currentItem()
-        if not item:
-            return
-        piece_type = item.data(Qt.UserRole)
-        if not piece_type:
-            return
-        drag = QDrag(self)
-        mime_data = self.model().mimeData([self.currentIndex()])
-        mime_data.setText(str(piece_type))
-        drag.setMimeData(mime_data)
-        self.pieceDragStarted.emit(str(piece_type))
-        drag.exec(Qt.CopyAction)
+    def set_active_color(self, color: str) -> None:
+        self._active_color = color
+        for item in self._items:
+            item.update_icon(color)
 
 
 class BoardWidget(QWidget):
@@ -338,7 +363,7 @@ class MainWindow(QMainWindow):
         self.resize(1200, 760)
         self._icons = PieceIconStore()
         self.photo_widget = PhotoCornerWidget()
-        self.palette = PiecePalette()
+        self.palette = PiecePalette(self._icons)
         self.board = BoardWidget(self._icons)
         self.fen_box = QTextEdit()
         self.fen_box.setReadOnly(True)
@@ -397,8 +422,13 @@ class MainWindow(QMainWindow):
         self.clear_board_btn.clicked.connect(self.board.clear_board)
         self.board.boardChanged.connect(self._update_fen)
         self.white_radio.toggled.connect(
-            lambda checked: self.board.set_active_color("white" if checked else "black")
+            lambda checked: self._set_active_color("white" if checked else "black")
         )
+        self._set_active_color("white")
+
+    def _set_active_color(self, color: str) -> None:
+        self.board.set_active_color(color)
+        self.palette.set_active_color(color)
 
     def _load_photo(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
