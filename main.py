@@ -4,7 +4,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, Qt, QMimeData, Signal
+from PySide6.QtCore import QPointF, Qt, QMimeData, Signal, QByteArray
 from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPen, QPixmap, QTransform
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -230,10 +230,11 @@ class PiecePalette(QWidget):
 
 class BoardWidget(QWidget):
     boardChanged = Signal()
+    _BOARD_DRAG_MIME = "application/x-chessposition-board-piece"
 
     def __init__(self, icon_store: PieceIconStore) -> None:
         super().__init__()
-        self.setMinimumSize(500, 500)
+        self.setMinimumSize(420, 420)
         self.setAcceptDrops(True)
         self._icon_store = icon_store
         self._board: dict[str, str] = {}
@@ -256,36 +257,71 @@ class BoardWidget(QWidget):
         self.update()
 
     def dragEnterEvent(self, event) -> None:
-        if event.mimeData().hasText():
+        if event.mimeData().hasFormat(self._BOARD_DRAG_MIME) or event.mimeData().hasText():
             event.acceptProposedAction()
 
     def dropEvent(self, event) -> None:
-        piece_type = event.mimeData().text().strip().upper()
         square = self._square_at(event.position())
-        if square is None or piece_type not in PIECE_CODES:
+        if square is None:
             return
-        self._board[square.name] = piece_type if self.active_color == "white" else piece_type.lower()
+        drop_square = square.name
+        mime_data = event.mimeData()
+        piece = ""
+        source_square = ""
+        if mime_data.hasFormat(self._BOARD_DRAG_MIME):
+            payload = bytes(mime_data.data(self._BOARD_DRAG_MIME)).decode("utf-8")
+            piece, _, source_square = payload.partition(":")
+            if not piece or piece.upper() not in PIECE_CODES:
+                return
+            if source_square and source_square != drop_square:
+                self._board.pop(source_square, None)
+        else:
+            piece_type = mime_data.text().strip().upper()
+            if piece_type not in PIECE_CODES:
+                return
+            piece = piece_type if self.active_color == "white" else piece_type.lower()
+        self._board[drop_square] = piece
         self.boardChanged.emit()
         self.update()
+        if source_square:
+            event.setDropAction(Qt.MoveAction)
+        event.accept()
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.RightButton:
+        if event.button() == Qt.LeftButton:
             square = self._square_at(event.position())
             if square is None:
                 return
+            piece = self._board.get(square.name)
+            if piece is None:
+                return
+            mime_data = QMimeData()
+            mime_data.setData(self._BOARD_DRAG_MIME, QByteArray(f"{piece}:{square.name}".encode("utf-8")))
+            drag = QDrag(self)
+            drag.setMimeData(mime_data)
+            drag.setPixmap(self._icon_store.pixmap(piece, 48))
+            drag.exec(Qt.MoveAction)
+            return
+        if event.button() == Qt.RightButton:
+            square = self._square_at(event.position())
             menu = QMenu(self)
-            for code, name in PIECE_TYPES:
-                action = QAction(name, self)
-                action.triggered.connect(
-                    lambda checked=False, c=code, s=square.name: self._place_piece(
-                        s, c if self.active_color == "white" else c.lower()
+            if square is not None:
+                for code, name in PIECE_TYPES:
+                    action = QAction(name, self)
+                    action.triggered.connect(
+                        lambda checked=False, c=code, s=square.name: self._place_piece(
+                            s, c if self.active_color == "white" else c.lower()
+                        )
                     )
-                )
-                menu.addAction(action)
-            menu.addSeparator()
-            clear_action = QAction("Clear square", self)
-            clear_action.triggered.connect(lambda checked=False, s=square.name: self._clear_square(s))
-            menu.addAction(clear_action)
+                    menu.addAction(action)
+                menu.addSeparator()
+                clear_action = QAction("Clear square", self)
+                clear_action.triggered.connect(lambda checked=False, s=square.name: self._clear_square(s))
+                menu.addAction(clear_action)
+                menu.addSeparator()
+            clear_board_action = QAction("Clear board", self)
+            clear_board_action.triggered.connect(self.clear_board)
+            menu.addAction(clear_board_action)
             menu.exec(event.globalPos())
 
     def _place_piece(self, square: str, piece: str) -> None:
@@ -378,7 +414,6 @@ class MainWindow(QMainWindow):
         self.photo_widget = PhotoCornerWidget()
         self.palette = PiecePalette(self._icons)
         self.color_toggle_btn = QPushButton()
-        self.clear_board_emoji_btn = QPushButton()
         self.board = BoardWidget(self._icons)
         self.fen_label = CopyableFenLabel()
         self._build_ui()
@@ -403,15 +438,11 @@ class MainWindow(QMainWindow):
         self.color_toggle_btn.setText("⚪")
         self.color_toggle_btn.setToolTip("Click to switch piece color")
         self.color_toggle_btn.setFixedSize(48, 48)
-        self.clear_board_emoji_btn.setText("❌")
-        self.clear_board_emoji_btn.setToolTip("Clear board")
-        self.clear_board_emoji_btn.setFixedSize(48, 48)
         palette_row = QHBoxLayout()
         palette_row.addStretch()
         palette_row.addWidget(self.palette)
         palette_row.addSpacing(10)
         palette_row.addWidget(self.color_toggle_btn)
-        palette_row.addWidget(self.clear_board_emoji_btn)
         palette_row.addStretch()
         root.addLayout(palette_row)
         root.addWidget(self.fen_label)
@@ -420,7 +451,6 @@ class MainWindow(QMainWindow):
     def _connect_signals(self) -> None:
         self.photo_widget.loadPhotoRequested.connect(self._load_photo)
         self.photo_widget.cornersChanged.connect(self._warp_photo)
-        self.clear_board_emoji_btn.clicked.connect(self.board.clear_board)
         self.board.boardChanged.connect(self._update_fen)
         self.color_toggle_btn.clicked.connect(self._toggle_active_color)
         self._set_active_color("white")
