@@ -1,0 +1,40 @@
+QWidget {
+  background-color: #1e1f29;
+  color: #f4f4f4;
+}
+
+QMainWindow, QFrame, QGroupBox, QSplitter, QListWidget, QTextEdit {
+  background-color: #1e1f29;
+}
+
+QPushButton, QRadioButton, QGroupBox {
+  background-color: #2d303d;
+}
+
+QLineEdit, QTextEdit, QListWidget {
+  background-color: #16161e;
+  border: 1px solid #3a3d4f;
+}
+
+QPushButton {
+  border: 1px solid #4a4f68;
+  padding: 6px 10px;
+}
+
+QPushButton:hover {
+  background-color: #393d4f;
+}
+
+QPushButton:pressed {
+  background-color: #2b2f3f;
+}
+
+QMenu {
+  background-color: #2d303d;
+  color: #f4f4f4;
+  border: 1px solid #4a4f68;
+}
+
+QMenu::item:selected {
+  background-color: #6272a4;
+}
