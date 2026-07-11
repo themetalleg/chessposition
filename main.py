@@ -4,7 +4,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, Qt, QMimeData, Signal, QByteArray
+from PySide6.QtCore import QPointF, Qt, QMimeData, Signal, QByteArray, QTimer
 from PySide6.QtGui import QAction, QColor, QDrag, QIcon, QImage, QPainter, QPen, QPixmap, QTransform
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -460,6 +460,18 @@ class MainWindow(QMainWindow):
         root.addLayout(palette_row)
         root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
+        QTimer.singleShot(0, self._sync_top_area_heights)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._sync_top_area_heights()
+
+    def _sync_top_area_heights(self) -> None:
+        side = min(self.photo_widget.width(), self.board.width())
+        if side <= 0:
+            return
+        self.photo_widget.setFixedHeight(side)
+        self.board.setFixedHeight(side)
 
     def _connect_signals(self) -> None:
         self.photo_widget.loadPhotoRequested.connect(self._load_photo)
