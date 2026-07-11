@@ -1,6 +1,6 @@
 import unittest
 
-from fen_utils import board_to_fen
+from utils.fen_utils import board_to_fen
 
 
 class BoardToFenTests(unittest.TestCase):

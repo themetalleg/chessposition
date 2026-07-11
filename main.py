@@ -25,7 +25,8 @@ from PySide6.QtWidgets import (
 
 from core.logging_manager import LoggingManager
 from core.style_manager import StyleManager
-from fen_utils import board_to_fen
+from styles.colors import BOARD_BG_COLOR, BOARD_GRID_COLOR, BOARD_LIGHT_SQUARE_COLOR, CORNER_MARKER_COLOR
+from utils.fen_utils import board_to_fen
 from utils.chess_utils import FILES, PIECE_CODES, PIECE_SVG_FILES, PIECE_TYPES, RANKS, square_name
 logger = LoggingManager.get_logger(__name__)
 
@@ -164,7 +165,7 @@ class PhotoCornerWidget(QLabel):
         painter.drawPixmap(int(left), int(top), scaled)
         sx = scaled.width() / self._source_pixmap.width()
         sy = scaled.height() / self._source_pixmap.height()
-        marker_color = QColor("#ff0000")
+        marker_color = QColor(CORNER_MARKER_COLOR)
         marker_pen = QPen(marker_color)
         marker_pen.setWidth(2)
         painter.setPen(marker_pen)
@@ -354,12 +355,12 @@ class BoardWidget(QWidget):
         origin_y = int((self.height() - side) / 2)
         square_size = side / 8
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#1e1f29"))
+        painter.fillRect(self.rect(), QColor(BOARD_BG_COLOR))
         if self._overlay is not None:
             painter.setOpacity(1.0)
             painter.drawPixmap(origin_x, origin_y, side, side, self._overlay)
             painter.setOpacity(1.0)
-        light = QColor("#ffffff")
+        light = QColor(BOARD_LIGHT_SQUARE_COLOR)
         light.setAlphaF(0.3)
         for rank in range(8):
             for file_index in range(8):
@@ -368,7 +369,7 @@ class BoardWidget(QWidget):
                 x = int(origin_x + file_index * square_size)
                 y = int(origin_y + rank * square_size)
                 painter.fillRect(x, y, int(square_size) + 1, int(square_size) + 1, light)
-        grid_pen = QPen(QColor("#ff0000"))
+        grid_pen = QPen(QColor(BOARD_GRID_COLOR))
         grid_pen.setWidth(max(2, int(square_size * 0.08)))
         painter.setPen(grid_pen)
         painter.setBrush(Qt.NoBrush)
