@@ -1,4 +1,4 @@
-# chessposition
+# Photo2LEN
 
 Desktop app to build a chess position from a photo and export FEN notation.
 

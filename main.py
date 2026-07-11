@@ -410,7 +410,7 @@ class CopyableFenLabel(QLabel):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Chess Position from Photo")
+        self.setWindowTitle("Photo2LEN")
         self.resize(1200, 760)
         self._icons = PieceIconStore()
         self.photo_widget = PhotoCornerWidget()
