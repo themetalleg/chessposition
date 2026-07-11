@@ -109,11 +109,6 @@ class PhotoCornerWidget(QLabel):
         self._refresh_view()
         self.cornersChanged.emit()
 
-    def clear_corners(self) -> None:
-        self._corners.clear()
-        self._refresh_view()
-        self.cornersChanged.emit()
-
     @property
     def source_pixmap(self) -> QPixmap | None:
         return self._source_pixmap
@@ -394,10 +389,8 @@ class MainWindow(QMainWindow):
 
         toolbar = QHBoxLayout()
         self.load_btn = QPushButton("Load photo")
-        self.reset_corners_btn = QPushButton("Reset corners")
         self.clear_board_btn = QPushButton("Clear board")
         toolbar.addWidget(self.load_btn)
-        toolbar.addWidget(self.reset_corners_btn)
         toolbar.addWidget(self.clear_board_btn)
         toolbar.addStretch()
         color_group = QGroupBox("Right-click / drag color")
@@ -431,7 +424,6 @@ class MainWindow(QMainWindow):
 
     def _connect_signals(self) -> None:
         self.load_btn.clicked.connect(self._load_photo)
-        self.reset_corners_btn.clicked.connect(self.photo_widget.clear_corners)
         self.photo_widget.loadPhotoRequested.connect(self._load_photo)
         self.photo_widget.cornersChanged.connect(self._warp_photo)
         self.clear_board_btn.clicked.connect(self.board.clear_board)
