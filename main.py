@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.logging_manager import LoggingManager
 from fen_utils import board_to_fen
 
 FILES = "abcdefgh"
@@ -46,6 +47,7 @@ PIECE_SVG_FILES = {
     "n": "File_Chess_ndt45.svg",
     "p": "File_Chess_pdt45.svg",
 }
+logger = LoggingManager.get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -81,6 +83,7 @@ class PieceIconStore:
                 data = svg_path.read_bytes()
                 self._svg_data[piece] = data
             except Exception:
+                logger.exception("Failed reading piece asset: %s", svg_path)
                 data = b""
         if data:
             renderer = QSvgRenderer(data)
@@ -91,6 +94,7 @@ class PieceIconStore:
                 renderer.render(painter)
                 painter.end()
                 return QPixmap.fromImage(img)
+            logger.warning("Invalid SVG data for piece '%s'; using fallback icon.", piece)
         fallback = QPixmap(size, size)
         fallback.fill(Qt.transparent)
         painter = QPainter(fallback)
@@ -334,11 +338,14 @@ class BoardWidget(QWidget):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor("#1e1f29"))
         if self._overlay is not None:
-            painter.setOpacity(0.45)
+            painter.setOpacity(1.0)
             painter.drawPixmap(origin_x, origin_y, side, side, self._overlay)
             painter.setOpacity(1.0)
         light = QColor("#f0d9b5")
         dark = QColor("#b58863")
+        if self._overlay is not None:
+            light.setAlpha(128)
+            dark.setAlpha(128)
         for rank in range(8):
             for file_index in range(8):
                 color = light if (rank + file_index) % 2 == 0 else dark
@@ -447,9 +454,11 @@ class MainWindow(QMainWindow):
         source = self.photo_widget.source_pixmap
         corners = self.photo_widget.corners
         if source is None:
+            logger.info("Warp blocked: no source image loaded.")
             QMessageBox.information(self, "Missing image", "Load a photo first.")
             return
         if len(corners) != 4:
+            logger.info("Warp blocked: expected 4 corners, got %d.", len(corners))
             QMessageBox.information(self, "Missing corners", "Click exactly 4 board corners first.")
             return
         src = [QPointF(p.x(), p.y()) for p in corners]
@@ -457,6 +466,7 @@ class MainWindow(QMainWindow):
         dst = [QPointF(0, 0), QPointF(side, 0), QPointF(side, side), QPointF(0, side)]
         transform = self._quad_to_quad_transform(src, dst)
         if transform is None:
+            logger.warning("Warp transform could not be computed for selected corners.")
             QMessageBox.warning(self, "Transform error", "Could not compute board transform.")
             return
         warped = QPixmap(side, side)
@@ -467,6 +477,7 @@ class MainWindow(QMainWindow):
         painter.drawPixmap(0, 0, source)
         painter.end()
         self.board.set_overlay(warped)
+        logger.info("Warp overlay applied.")
 
     @staticmethod
     def _quad_to_quad_transform(src: list[QPointF], dst: list[QPointF]) -> QTransform | None:
@@ -496,6 +507,7 @@ def apply_dark_theme(app: QApplication) -> None:
 
 
 def main() -> int:
+    LoggingManager.configure()
     app = QApplication(sys.argv)
     apply_dark_theme(app)
     window = MainWindow()
