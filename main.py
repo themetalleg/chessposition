@@ -95,7 +95,7 @@ class PhotoCornerWidget(QLabel):
         self.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
         self.setMinimumSize(420, 420)
         self.setAlignment(Qt.AlignCenter)
-        self.setText("Load a photo and click 4 board corners\n(top-left, top-right, bottom-right, bottom-left).")
+        self.setText("Load a photo and click 4 board corners (any order).")
         self._source_pixmap: QPixmap | None = None
         self._display_pixmap: QPixmap | None = None
         self._corners: list[QPointF] = []
@@ -392,11 +392,9 @@ class MainWindow(QMainWindow):
         toolbar = QHBoxLayout()
         self.load_btn = QPushButton("Load photo")
         self.reset_corners_btn = QPushButton("Reset corners")
-        self.warp_btn = QPushButton("Warp onto board")
         self.clear_board_btn = QPushButton("Clear board")
         toolbar.addWidget(self.load_btn)
         toolbar.addWidget(self.reset_corners_btn)
-        toolbar.addWidget(self.warp_btn)
         toolbar.addWidget(self.clear_board_btn)
         toolbar.addStretch()
         color_group = QGroupBox("Right-click / drag color")
@@ -431,7 +429,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self) -> None:
         self.load_btn.clicked.connect(self._load_photo)
         self.reset_corners_btn.clicked.connect(self.photo_widget.clear_corners)
-        self.warp_btn.clicked.connect(self._warp_photo)
+        self.photo_widget.cornersChanged.connect(self._warp_photo)
         self.clear_board_btn.clicked.connect(self.board.clear_board)
         self.board.boardChanged.connect(self._update_fen)
         self.white_radio.toggled.connect(
@@ -458,14 +456,12 @@ class MainWindow(QMainWindow):
         source = self.photo_widget.source_pixmap
         corners = self.photo_widget.corners
         if source is None:
-            logger.info("Warp blocked: no source image loaded.")
-            QMessageBox.information(self, "Missing image", "Load a photo first.")
+            self.board.set_overlay(None)
             return
         if len(corners) != 4:
-            logger.info("Warp blocked: expected 4 corners, got %d.", len(corners))
-            QMessageBox.information(self, "Missing corners", "Click exactly 4 board corners first.")
+            self.board.set_overlay(None)
             return
-        src = [QPointF(p.x(), p.y()) for p in corners]
+        src = self._order_corners(corners)
         side = 1024
         dst = [QPointF(0, 0), QPointF(side, 0), QPointF(side, side), QPointF(0, side)]
         transform = self._quad_to_quad_transform(src, dst)
@@ -482,6 +478,17 @@ class MainWindow(QMainWindow):
         painter.end()
         self.board.set_overlay(warped)
         logger.info("Warp overlay applied.")
+
+    @staticmethod
+    def _order_corners(corners: list[QPointF]) -> list[QPointF]:
+        points = [QPointF(p.x(), p.y()) for p in corners]
+        sums = [p.x() + p.y() for p in points]
+        diffs = [p.y() - p.x() for p in points]
+        top_left = points[sums.index(min(sums))]
+        bottom_right = points[sums.index(max(sums))]
+        top_right = points[diffs.index(min(diffs))]
+        bottom_left = points[diffs.index(max(diffs))]
+        return [top_left, top_right, bottom_right, bottom_left]
 
     @staticmethod
     def _quad_to_quad_transform(src: list[QPointF], dst: list[QPointF]) -> QTransform | None:

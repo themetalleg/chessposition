@@ -5,7 +5,7 @@ Desktop app to build a chess position from a photo and export FEN notation.
 ## Features
 
 - PySide6 desktop GUI with dark mode.
-- Load a board photo, click the 4 board corners, and warp the photo to a square virtual board background.
+- Load a board photo and click 4 board corners (in any order); once all four are set, the photo is warped automatically to the board background.
 - Place pieces by:
   - Dragging from the side piece palette.
   - Right-clicking a square and choosing a piece from a context menu.
