@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, Qt, QMimeData, Signal
-from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPixmap, QTransform
+from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPen, QPixmap, QTransform
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication,
@@ -325,17 +325,25 @@ class BoardWidget(QWidget):
             painter.setOpacity(1.0)
             painter.drawPixmap(origin_x, origin_y, side, side, self._overlay)
             painter.setOpacity(1.0)
-        light = QColor("#f0d9b5")
-        dark = QColor("#b58863")
-        if self._overlay is not None:
-            light.setAlpha(128)
-            dark.setAlpha(128)
+        light = QColor("#ffffff")
+        light.setAlphaF(0.3)
         for rank in range(8):
             for file_index in range(8):
-                color = light if (rank + file_index) % 2 == 0 else dark
+                if (rank + file_index) % 2 != 0:
+                    continue
                 x = int(origin_x + file_index * square_size)
                 y = int(origin_y + rank * square_size)
-                painter.fillRect(x, y, int(square_size) + 1, int(square_size) + 1, color)
+                painter.fillRect(x, y, int(square_size) + 1, int(square_size) + 1, light)
+        grid_pen = QPen(QColor("#ff0000"))
+        grid_pen.setWidth(max(2, int(square_size * 0.08)))
+        painter.setPen(grid_pen)
+        painter.setBrush(Qt.NoBrush)
+        painter.drawRect(origin_x, origin_y, side, side)
+        for i in range(1, 8):
+            x = int(origin_x + i * square_size)
+            y = int(origin_y + i * square_size)
+            painter.drawLine(x, origin_y, x, origin_y + side)
+            painter.drawLine(origin_x, y, origin_x + side, y)
         for rank_index, rank in enumerate(RANKS):
             for file_index, file_name in enumerate(FILES):
                 square = f"{file_name}{rank}"
