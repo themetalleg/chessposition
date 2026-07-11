@@ -160,8 +160,6 @@ class PhotoCornerWidget(QLabel):
         top = (self.height() - self._display_pixmap.height()) / 2
         x = pos.x() - left
         y = pos.y() - top
-        if x < 0 or y < 0 or x > self._display_pixmap.width() or y > self._display_pixmap.height():
-            return None
         return QPointF(x / sx, y / sy)
 
     def resizeEvent(self, event) -> None:
@@ -172,13 +170,17 @@ class PhotoCornerWidget(QLabel):
         if self._source_pixmap is None:
             return
         scaled = self._source_pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        canvas = QPixmap(scaled)
+        canvas = QPixmap(self.size())
+        canvas.fill(Qt.transparent)
         painter = QPainter(canvas)
+        left = (canvas.width() - scaled.width()) / 2
+        top = (canvas.height() - scaled.height()) / 2
+        painter.drawPixmap(int(left), int(top), scaled)
         sx = scaled.width() / self._source_pixmap.width()
         sy = scaled.height() / self._source_pixmap.height()
         colors = [QColor("#50fa7b"), QColor("#8be9fd"), QColor("#ffb86c"), QColor("#ff79c6")]
         for i, source_point in enumerate(self._corners):
-            p = QPointF(source_point.x() * sx, source_point.y() * sy)
+            p = QPointF(left + source_point.x() * sx, top + source_point.y() * sy)
             painter.setPen(colors[i % len(colors)])
             painter.setBrush(colors[i % len(colors)])
             painter.drawEllipse(p, 5, 5)
