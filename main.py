@@ -9,18 +9,15 @@ from PySide6.QtGui import QAction, QColor, QDrag, QImage, QPainter, QPen, QPixma
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QApplication,
-    QButtonGroup,
     QFileDialog,
     QFrame,
     QGridLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QMenu,
     QMessageBox,
     QPushButton,
-    QRadioButton,
     QVBoxLayout,
     QWidget,
 )
@@ -377,6 +374,7 @@ class MainWindow(QMainWindow):
         self._icons = PieceIconStore()
         self.photo_widget = PhotoCornerWidget()
         self.palette = PiecePalette(self._icons)
+        self.color_toggle_btn = QPushButton()
         self.board = BoardWidget(self._icons)
         self.fen_label = CopyableFenLabel()
         self._build_ui()
@@ -393,17 +391,6 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.load_btn)
         toolbar.addWidget(self.clear_board_btn)
         toolbar.addStretch()
-        color_group = QGroupBox("Right-click / drag color")
-        colors_layout = QHBoxLayout(color_group)
-        self.white_radio = QRadioButton("White")
-        self.black_radio = QRadioButton("Black")
-        self.white_radio.setChecked(True)
-        self.color_buttons = QButtonGroup(self)
-        self.color_buttons.addButton(self.white_radio)
-        self.color_buttons.addButton(self.black_radio)
-        colors_layout.addWidget(self.white_radio)
-        colors_layout.addWidget(self.black_radio)
-        toolbar.addWidget(color_group)
         root.addLayout(toolbar)
 
         top_row = QHBoxLayout()
@@ -412,13 +399,21 @@ class MainWindow(QMainWindow):
         photo_layout.addWidget(self.photo_widget, stretch=1)
         board_panel = QWidget()
         board_layout = QVBoxLayout(board_panel)
-        board_layout.addWidget(QLabel("Board"))
         board_layout.addWidget(self.board, stretch=1)
         top_row.addWidget(photo_panel, stretch=1)
         top_row.addWidget(board_panel, stretch=1)
         root.addLayout(top_row, stretch=1)
 
-        root.addWidget(self.palette, alignment=Qt.AlignCenter)
+        self.color_toggle_btn.setText("⚪")
+        self.color_toggle_btn.setToolTip("Click to switch piece color")
+        self.color_toggle_btn.setFixedSize(48, 48)
+        palette_row = QHBoxLayout()
+        palette_row.addStretch()
+        palette_row.addWidget(self.palette)
+        palette_row.addSpacing(10)
+        palette_row.addWidget(self.color_toggle_btn)
+        palette_row.addStretch()
+        root.addLayout(palette_row)
         root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
 
@@ -428,14 +423,17 @@ class MainWindow(QMainWindow):
         self.photo_widget.cornersChanged.connect(self._warp_photo)
         self.clear_board_btn.clicked.connect(self.board.clear_board)
         self.board.boardChanged.connect(self._update_fen)
-        self.white_radio.toggled.connect(
-            lambda checked: self._set_active_color("white" if checked else "black")
-        )
+        self.color_toggle_btn.clicked.connect(self._toggle_active_color)
         self._set_active_color("white")
 
     def _set_active_color(self, color: str) -> None:
         self.board.set_active_color(color)
         self.palette.set_active_color(color)
+        self.color_toggle_btn.setText("⚪" if color == "white" else "⚫")
+
+    def _toggle_active_color(self) -> None:
+        next_color = "black" if self.board.active_color == "white" else "white"
+        self._set_active_color(next_color)
 
     def _load_photo(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
