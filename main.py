@@ -115,6 +115,9 @@ class PhotoCornerWidget(QLabel):
         return list(self._corners)
 
     def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.RightButton:
+            self.loadPhotoRequested.emit()
+            return
         if event.button() != Qt.LeftButton:
             return
         if self._source_pixmap is None:
@@ -375,6 +378,7 @@ class MainWindow(QMainWindow):
         self.photo_widget = PhotoCornerWidget()
         self.palette = PiecePalette(self._icons)
         self.color_toggle_btn = QPushButton()
+        self.clear_board_emoji_btn = QPushButton()
         self.board = BoardWidget(self._icons)
         self.fen_label = CopyableFenLabel()
         self._build_ui()
@@ -384,14 +388,6 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         outer = QWidget()
         root = QVBoxLayout(outer)
-
-        toolbar = QHBoxLayout()
-        self.load_btn = QPushButton("Load photo")
-        self.clear_board_btn = QPushButton("Clear board")
-        toolbar.addWidget(self.load_btn)
-        toolbar.addWidget(self.clear_board_btn)
-        toolbar.addStretch()
-        root.addLayout(toolbar)
 
         top_row = QHBoxLayout()
         photo_panel = QWidget()
@@ -407,21 +403,24 @@ class MainWindow(QMainWindow):
         self.color_toggle_btn.setText("⚪")
         self.color_toggle_btn.setToolTip("Click to switch piece color")
         self.color_toggle_btn.setFixedSize(48, 48)
+        self.clear_board_emoji_btn.setText("❌")
+        self.clear_board_emoji_btn.setToolTip("Clear board")
+        self.clear_board_emoji_btn.setFixedSize(48, 48)
         palette_row = QHBoxLayout()
         palette_row.addStretch()
         palette_row.addWidget(self.palette)
         palette_row.addSpacing(10)
         palette_row.addWidget(self.color_toggle_btn)
+        palette_row.addWidget(self.clear_board_emoji_btn)
         palette_row.addStretch()
         root.addLayout(palette_row)
         root.addWidget(self.fen_label)
         self.setCentralWidget(outer)
 
     def _connect_signals(self) -> None:
-        self.load_btn.clicked.connect(self._load_photo)
         self.photo_widget.loadPhotoRequested.connect(self._load_photo)
         self.photo_widget.cornersChanged.connect(self._warp_photo)
-        self.clear_board_btn.clicked.connect(self.board.clear_board)
+        self.clear_board_emoji_btn.clicked.connect(self.board.clear_board)
         self.board.boardChanged.connect(self._update_fen)
         self.color_toggle_btn.clicked.connect(self._toggle_active_color)
         self._set_active_color("white")
